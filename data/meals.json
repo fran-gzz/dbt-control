@@ -1,0 +1,98 @@
+[
+  {
+    "id": "m1",
+    "name": "Tostadas con palta",
+    "ingredients": ["Pan integral", "Palta", "Tomate", "Aceite de oliva", "Sal"],
+    "carbs": 28,
+    "protein": 6,
+    "fat": 14
+  },
+  {
+    "id": "m2",
+    "name": "Yogur con granola",
+    "ingredients": ["Yogur natural", "Granola", "Miel", "Arándanos"],
+    "carbs": 42,
+    "protein": 12,
+    "fat": 9
+  },
+  {
+    "id": "m3",
+    "name": "Pollo con arroz",
+    "ingredients": ["Pechuga de pollo", "Arroz integral", "Brócoli", "Aceite de oliva"],
+    "carbs": 48,
+    "protein": 35,
+    "fat": 10
+  },
+  {
+    "id": "m4",
+    "name": "Ensalada César",
+    "ingredients": ["Lechuga", "Pollo", "Crutones", "Queso parmesano", "Aderezo César"],
+    "carbs": 18,
+    "protein": 28,
+    "fat": 22
+  },
+  {
+    "id": "m5",
+    "name": "Salmón con verduras",
+    "ingredients": ["Salmón", "Zucchini", "Zanahoria", "Limón", "Eneldo"],
+    "carbs": 12,
+    "protein": 34,
+    "fat": 20
+  },
+  {
+    "id": "m6",
+    "name": "Avena con frutas",
+    "ingredients": ["Avena", "Banana", "Frutillas", "Leche", "Canela"],
+    "carbs": 54,
+    "protein": 11,
+    "fat": 7
+  },
+  {
+    "id": "m7",
+    "name": "Tortilla de papas",
+    "ingredients": ["Huevo", "Papa", "Cebolla", "Aceite de oliva"],
+    "carbs": 34,
+    "protein": 16,
+    "fat": 18
+  },
+  {
+    "id": "m8",
+    "name": "Wok de vegetales",
+    "ingredients": ["Pimiento", "Brócoli", "Zanahoria", "Salsa de soja", "Tofu"],
+    "carbs": 26,
+    "protein": 18,
+    "fat": 11
+  },
+  {
+    "id": "m9",
+    "name": "Huevos revueltos",
+    "ingredients": ["Huevo", "Manteca", "Sal", "Pimienta"],
+    "carbs": 2,
+    "protein": 18,
+    "fat": 16
+  },
+  {
+    "id": "m10",
+    "name": "Pasta integral",
+    "ingredients": ["Fideos integrales", "Tomate", "Albahaca", "Aceite de oliva", "Parmesano"],
+    "carbs": 62,
+    "protein": 14,
+    "fat": 12
+  },
+  {
+    "id": "m11",
+    "name": "Pescado al horno",
+    "ingredients": ["Merluza", "Papa", "Limón", "Romero", "Aceite de oliva"],
+    "carbs": 30,
+    "protein": 32,
+    "fat": 9
+  },
+  {
+    "id": "m12",
+    "name": "Sopa de verduras",
+    "ingredients": ["Calabaza", "Zanahoria", "Apio", "Cebolla", "Caldo"],
+    "carbs": 22,
+    "protein": 5,
+    "fat": 4
+  }
+]
