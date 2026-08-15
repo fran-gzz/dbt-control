@@ -30,13 +30,16 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_MOBILE_CLOSE_ANIMATION_MS = 300
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
   setOpen: (open: boolean) => void
   openMobile: boolean
-  setOpenMobile: (open: boolean) => void
+  mobileSheetMounted: boolean
+  openMobileSheet: () => void
+  closeMobileSheet: (instant?: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
 }
@@ -67,6 +70,33 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const [mobileSheetMounted, setMobileSheetMounted] = React.useState(false)
+  const mobileCloseTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const openMobileSheet = React.useCallback(() => {
+    if (mobileCloseTimer.current) {
+      clearTimeout(mobileCloseTimer.current)
+      mobileCloseTimer.current = null
+    }
+    setMobileSheetMounted(true)
+    setOpenMobile(true)
+  }, [])
+
+  const closeMobileSheet = React.useCallback((instant = false) => {
+    if (mobileCloseTimer.current) {
+      clearTimeout(mobileCloseTimer.current)
+      mobileCloseTimer.current = null
+    }
+    setOpenMobile(false)
+    if (instant) {
+      setMobileSheetMounted(false)
+    } else {
+      mobileCloseTimer.current = setTimeout(() => {
+        setMobileSheetMounted(false)
+        mobileCloseTimer.current = null
+      }, SIDEBAR_MOBILE_CLOSE_ANIMATION_MS)
+    }
+  }, [])
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -89,8 +119,12 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  }, [isMobile, setOpen, setOpenMobile])
+    return isMobile
+      ? mobileSheetMounted
+        ? closeMobileSheet(false)
+        : openMobileSheet()
+      : setOpen((open) => !open)
+  }, [isMobile, setOpen, mobileSheetMounted, openMobileSheet, closeMobileSheet])
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -119,10 +153,12 @@ function SidebarProvider({
       setOpen,
       isMobile,
       openMobile,
-      setOpenMobile,
+      mobileSheetMounted,
+      openMobileSheet,
+      closeMobileSheet,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, mobileSheetMounted, openMobileSheet, closeMobileSheet, toggleSidebar]
   )
 
   return (
@@ -161,7 +197,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, mobileSheetMounted, openMobileSheet, closeMobileSheet } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -179,8 +215,14 @@ function Sidebar({
   }
 
   if (isMobile) {
+    if (!mobileSheetMounted) return null
+
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Sheet
+        open={openMobile}
+        onOpenChange={(open) => (open ? openMobileSheet() : closeMobileSheet(false))}
+        {...props}
+      >
         <SheetContent
           dir={dir}
           data-sidebar="sidebar"

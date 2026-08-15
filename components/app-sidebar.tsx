@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity, LayoutDashboard, PlusCircle, History, BarChart3, UtensilsCrossed, Settings, LogOut } from "lucide-react"
+import { Activity, LayoutDashboard, PlusCircle, History, BarChart3, UtensilsCrossed, FileDown, Settings, LogOut } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
  } from "@/components/ui/sidebar"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -34,12 +35,16 @@ const navItems = [
   { title: "Historial", url: "/historial", icon: History },
   { title: "Estadísticas", url: "/estadisticas", icon: BarChart3 },
   { title: "Comidas", url: "/comidas", icon: UtensilsCrossed },
+  { title: "Reporte PDF", url: "/reporte", icon: FileDown },
   { title: "Configuración", url: "/configuracion", icon: Settings },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { closeMobileSheet } = useSidebar()
+
+  const closeMobile = () => closeMobileSheet(true)
 
   const name =
     user?.displayName || user?.email?.split("@")[0] || "Usuario"
@@ -58,7 +63,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" className="flex items-center gap-2">
+              <Link href="/dashboard" onClick={closeMobile} className="flex items-center gap-2">
                 <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Activity className="size-4" />
                 </div>
@@ -79,7 +84,7 @@ export function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton isActive={pathname === item.url} asChild>
-                    <Link href={item.url} className="flex items-center gap-2">
+                    <Link href={item.url} onClick={closeMobile} className="flex items-center gap-2">
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
                     </Link>
