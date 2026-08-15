@@ -9,7 +9,6 @@ import {
   LineChart,
   LogIn,
   ShieldCheck,
-  Sparkles,
   UtensilsCrossed,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -119,17 +118,6 @@ function DashboardPreview() {
   )
 }
 
-function ScreenshotPlaceholder({ title }: { title: string }) {
-  return (
-    <div className="flex aspect-video items-center justify-center rounded-2xl border-2 border-dashed border-border bg-card/40 p-6 text-center">
-      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-        <Sparkles className="size-5" />
-        <span className="text-sm font-medium">Próximamente: captura de {title}</span>
-      </div>
-    </div>
-  )
-}
-
 export default function LandingPage() {
   return (
     <div className="flex flex-1 flex-col">
@@ -150,9 +138,6 @@ export default function LandingPage() {
             </Link>
             <Link href="#como-funciona" className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
               Cómo funciona
-            </Link>
-            <Link href="#capturas" className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-              Capturas
             </Link>
           </nav>
           <div className="flex items-center gap-1.5">
@@ -252,25 +237,6 @@ export default function LandingPage() {
               <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section id="capturas" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-20 md:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium">
-            Capturas
-          </Badge>
-          <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-            Mirá DBT Control en acción
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Un vistazo al panel, las estadísticas y la biblioteca de comidas.
-          </p>
-        </div>
-        <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <ScreenshotPlaceholder title="Dashboard" />
-          <ScreenshotPlaceholder title="Estadísticas" />
-          <ScreenshotPlaceholder title="Comidas" />
         </div>
       </section>
 
