@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { ReadingsBoundary } from "@/components/readings-provider";
 import { MealsBoundary } from "@/components/meals-provider";
+import { SettingsBoundary } from "@/components/settings-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppShell } from "@/components/app-shell";
 
@@ -38,11 +39,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            <ReadingsBoundary>
-              <MealsBoundary>
-                <AppShell>{children}</AppShell>
-              </MealsBoundary>
-            </ReadingsBoundary>
+            <SettingsBoundary>
+              <ReadingsBoundary>
+                <MealsBoundary>
+                  <AppShell>{children}</AppShell>
+                </MealsBoundary>
+              </ReadingsBoundary>
+            </SettingsBoundary>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -8,13 +8,23 @@ const chartConfig = {
   value: { label: "En rango", color: "var(--chart-1)" },
 }
 
-export function InRangeChart({ percent }: { percent: number }) {
+export function InRangeChart({
+  percent,
+  minValue = 70,
+  maxValue = 140,
+}: {
+  percent: number
+  minValue?: number
+  maxValue?: number
+}) {
   const data = [{ name: "rango", value: percent, fill: "var(--chart-1)" }]
   return (
     <Card>
       <CardHeader>
         <CardTitle>Porcentaje dentro de rango</CardTitle>
-        <CardDescription>Lecturas entre 70 y 140 mg/dL</CardDescription>
+        <CardDescription>
+          Lecturas entre {minValue} y {maxValue} mg/dL
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-center">
         <ChartContainer config={chartConfig} className="relative h-55 w-full">

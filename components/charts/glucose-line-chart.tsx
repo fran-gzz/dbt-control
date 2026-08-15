@@ -8,7 +8,17 @@ const chartConfig = {
     value: { label: "Glucemia", color: "var(--chart-1)" },
 }
 
-export function GlucoseLineChart({ data }: { data: { date: string; value: number }[] }) {
+export function GlucoseLineChart({
+  data,
+  minValue = 70,
+  maxValue = 140,
+}: {
+  data: { date: string; value: number }[]
+  minValue?: number
+  maxValue?: number
+}) {
+  const lowerDomain = Math.min(minValue - 20, 60)
+  const upperDomain = Math.max(maxValue + 20, 160)
   return (
     <Card>
       <CardHeader>
@@ -37,11 +47,11 @@ export function GlucoseLineChart({ data }: { data: { date: string; value: number
               tickLine={false}
               axisLine={false}
               width={36}
-              domain={[60, 160]}
+              domain={[lowerDomain, upperDomain]}
               tick={{ fontSize: 12 }}
             />
-            <ReferenceLine y={140} stroke="var(--chart-5)" strokeDasharray="4 4" strokeOpacity={0.5} />
-            <ReferenceLine y={70} stroke="var(--chart-2)" strokeDasharray="4 4" strokeOpacity={0.5} />
+            <ReferenceLine y={maxValue} stroke="var(--chart-5)" strokeDasharray="4 4" strokeOpacity={0.5} />
+            <ReferenceLine y={minValue} stroke="var(--chart-2)" strokeDasharray="4 4" strokeOpacity={0.5} />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <Area
               dataKey="value"

@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth-provider";
 import { useReadings } from "@/components/readings-provider";
+import { useSettings } from "@/components/settings-provider";
 import {
   dailyTrendFrom,
   hba1cFrom,
@@ -23,6 +24,7 @@ import {
 export default function DashboardPage() {
   const { user } = useAuth()
   const { readings, loading } = useReadings()
+  const { settings } = useSettings()
 
   const firstName =
     user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || ""
@@ -69,7 +71,11 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-5">
               <div className="lg:col-span-3">
-                <GlucoseLineChart data={dailyTrendFrom(readings)} />
+                <GlucoseLineChart
+                  data={dailyTrendFrom(readings)}
+                  minValue={settings.minValue}
+                  maxValue={settings.maxValue}
+                />
               </div>
               <div className="lg:col-span-2">
                 <TimeOfDayBarChart data={timeOfDayAveragesFrom(readings)} />

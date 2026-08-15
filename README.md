@@ -10,7 +10,10 @@ El flujo principal es: **Landing → Login → Dashboard**.
 - **Autenticación con Google** vía Firebase Authentication.
 - **Registro de mediciones** con fecha, hora, tipo (ayunas, desayuno, almuerzo, cena, antes de dormir), comida relacionada, actividad física, estado emocional y observaciones.
 - **Dashboard** con glucemia actual, promedio semanal, HbA1c estimada (fórmula ADAG) y cantidad de mediciones.
-- **Gráficos interactivos**: evolución glucémica diaria, promedios por momento del día, tendencia semanal, distribución por estado y porcentaje en rango (70–140 mg/dL).
+- **Gráficos interactivos**: evolución glucémica diaria, promedios por momento del día, tendencia semanal, distribución por estado y porcentaje en rango.
+- **Rangos objetivo configurables**: definí tus propios límites (por defecto 70–140 mg/dL). Se aplican en todo el flujo: estado de cada medición, gráficos, estadísticas e historial.
+- **Resumen semanal por email** (Resend): cada lunes recibís un resumen con tus estadísticas de la semana.
+- **Eliminación de cuenta** real: borra todas tus mediciones, comidas y preferencias de Firestore, además de tu cuenta de acceso.
 - **Historial filtrable** por fecha, tipo de medición y rango glucémico, con edición y eliminación.
 - **Biblioteca de comidas** con información nutricional (carbohidratos, proteínas, grasas), vinculable a las mediciones.
 - **Modo claro / oscuro** y almacenamiento seguro de datos por usuario en Cloud Firestore.
@@ -30,6 +33,7 @@ El flujo principal es: **Landing → Login → Dashboard**.
 | Dependencia | Versión | Rol |
 | --- | --- | --- |
 | **Firebase** | ^12.15.0 | Authentication (Google) + Cloud Firestore (base de datos en tiempo real). |
+| **firebase-admin** | ^14 | SDK de servidor (solo en la ruta del resumen semanal: lista de usuarios, lectura y envío). |
 
 ### Estilos y UI
 
@@ -71,8 +75,8 @@ Las rutas públicas son `/` y `/login`. El resto de las rutas (`/dashboard`, `/h
 
 ### Estado global
 
-- `components/auth-provider.tsx` — escucha el estado de autenticación (`onAuthStateChanged`) y expone `user`, `login()` y `logout()`.
-- `components/readings-provider.tsx` y `components/meals-provider.tsx` — escuchan cambios en Firestore (`onSnapshot`) y exponen la data del usuario más operaciones CRUD. Se montan por usuario mediante `key={user?.uid}`.
+- `components/auth-provider.tsx` — escucha el estado de autenticación (`onAuthStateChanged`) y expone `user`, `login()`, `logout()` y `deleteAccount()`.
+- `components/readings-provider.tsx`, `components/meals-provider.tsx` y `components/settings-provider.tsx` — escuchan cambios en Firestore (`onSnapshot`) y exponen la data del usuario más operaciones CRUD. Se montan por usuario mediante `key={user?.uid}`.
 
 ### Modelo de datos en Firestore
 
@@ -81,10 +85,12 @@ Cada usuario tiene sus propias subcolecciones dentro de `users/{userId}`:
 ```
 users/{userId}
 ├── readings/    # mediciones de glucemia
-└── meals/       # comidas con información nutricional
+├── meals/       # comidas con información nutricional
+└── settings/
+    └── config   # preferencias (rangos objetivo + resumen semanal)
 ```
 
-Una medición (`readings`) tiene: `value`, `date`, `time`, `type`, `meal`, `activity`, `mood`, `notes`, `status` (normal / alta / baja). El estado se calcula con `computeStatus()`: `> 140` es "alta", `< 70` es "baja", el resto "normal".
+Una medición (`readings`) tiene: `value`, `date`, `time`, `type`, `meal`, `activity`, `mood`, `notes`, `status` (normal / alta / baja). El estado se calcula con `computeStatus(value, min, max)`: por defecto `> 140` es "alta", `< 70` es "baja", el resto "normal", pero los límites se toman de la configuración del usuario.
 
 ### Cálculos (`lib/data.ts`)
 
@@ -103,19 +109,24 @@ app/
 ├── historial/            # Historial con filtros
 ├── estadisticas/         # Gráficos y métricas
 ├── comidas/              # Biblioteca de comidas
-├── configuracion/        # Perfil y preferencias
-└── nueva-medicion/       # Formulario de medición
+├── configuracion/        # Rangos objetivo, notificaciones y eliminación de cuenta
+├── nueva-medicion/       # Formulario de medición
+└── api/cron/weekly-summary/  # Ruta del cron: resumen semanal por email
 components/
 ├── app-shell.tsx         # Enrutado protegido + layout con sidebar
 ├── app-sidebar.tsx       # Navegación lateral
 ├── readings-provider.tsx # Estado global de mediciones (Firestore)
 ├── meals-provider.tsx    # Estado global de comidas (Firestore)
+├── settings-provider.tsx # Estado global de preferencias (Firestore)
 ├── auth-provider.tsx     # Estado global de autenticación
 ├── charts/               # Gráficos de Recharts
 └── ui/                   # Componentes shadcn/ui
 lib/
-├── firebase.ts           # Inicialización de Firebase
+├── firebase.ts           # Inicialización de Firebase (cliente)
+├── firebase-admin.ts     # Inicialización de Firebase Admin (servidor)
 ├── firestore.ts          # Operaciones CRUD contra Firestore
+├── settings.ts           # Tipos y valores por defecto de configuración
+├── email.ts              # Envío de emails vía Resend
 ├── data.ts               # Cálculos y transformaciones de datos
 └── types.ts              # Tipos TypeScript
 ```
@@ -158,7 +169,18 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 ```
 
-### 4. Reglas de seguridad de Firestore
+### 4. (Opcional) Resumen semanal por email
+
+El resumen semanal usa **Resend** (gratuito) y **firebase-admin**, y se dispara desde un cron de Vercel. Para activarlo:
+
+1. Creá una API key en [resend.com/api-keys](https://resend.com/api-keys) y guardala en `RESEND_API_KEY`.
+2. **Remitente (`EMAIL_FROM`)**: el dominio de prueba `onboarding@resend.dev` solo puede enviar al email de tu cuenta de Resend (ideal para uso personal). Para enviar a cualquier destinatario, verificá tu propio dominio en Resend.
+3. En Firebase Console → **Project settings → Service accounts → Generate new private key**, descargá el JSON y guardalo en la variable de servidor `FIREBASE_SERVICE_ACCOUNT` (el JSON completo en una sola variable).
+4. Generá un secreto aleatorio para `CRON_SECRET` (ej. `openssl rand -hex 32`). Vercel Cron lo envía automáticamente como `Authorization: Bearer <CRON_SECRET>`.
+
+El cron se define en `vercel.json` (los lunes 8:00 UTC). En el plan **Hobby** de Vercel los cron jobs se ejecutan como máximo una vez por día y sin precisión de minuto, lo cual alcanza para un resumen semanal.
+
+### 5. Reglas de seguridad de Firestore
 
 Para que cada usuario solo pueda acceder a sus propios datos:
 
@@ -173,7 +195,7 @@ service cloud.firestore {
 }
 ```
 
-### 5. Levantar el servidor
+### 6. Levantar el servidor
 
 ```bash
 npm run dev
@@ -192,7 +214,7 @@ Abrí [http://localhost:3000](http://localhost:3000).
 
 ## ☁️ Deploy
 
-La app está lista para desplegarse en [Vercel](https://vercel.com) (o cualquier plataforma compatible con Next.js). En el dashboard de Vercel agregá las mismas variables de entorno `NEXT_PUBLIC_FIREBASE_*` usadas en local.
+La app está lista para desplegarse en [Vercel](https://vercel.com) (o cualquier plataforma compatible con Next.js). En el dashboard de Vercel agregá las mismas variables de entorno `NEXT_PUBLIC_FIREBASE_*` usadas en local y, si usás el resumen semanal, también las de servidor (`RESEND_API_KEY`, `EMAIL_FROM`, `FIREBASE_SERVICE_ACCOUNT`, `CRON_SECRET`). El cron de `vercel.json` se registra automáticamente con cada deploy.
 
 ## 📄 Licencia
 

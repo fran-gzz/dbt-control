@@ -17,6 +17,7 @@ import {
 import { computeStatus } from "@/lib/data"
 import { useReadings } from "@/components/readings-provider"
 import { useMeals } from "@/components/meals-provider"
+import { useSettings } from "@/components/settings-provider"
 import { CheckCircle2, Loader2, Save } from "lucide-react"
 import type { MeasurementType } from "@/lib/types"
 
@@ -29,6 +30,7 @@ export function MeasurementForm() {
   const prefillMeal = searchParams.get("comida") ?? ""
   const { addReading } = useReadings()
   const { meals } = useMeals()
+  const { settings } = useSettings()
 
   const [fecha, setFecha] = useState("")
   const [hora, setHora] = useState("")
@@ -70,7 +72,7 @@ export function MeasurementForm() {
         activity,
         mood,
         notes,
-        status: computeStatus(numericValue),
+        status: computeStatus(numericValue, settings.minValue, settings.maxValue),
       })
       setSubmitted(true)
       setValue("")

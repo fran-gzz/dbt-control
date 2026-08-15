@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/table"
 import { StatusBadge } from "@/components/status-badge"
 import { ReadingForm } from "@/components/reading-form"
+import { ReadingCard } from "@/components/reading-card"
 import { useReadings } from "@/components/readings-provider"
+import { useSettings } from "@/components/settings-provider"
+import { computeStatus } from "@/lib/data"
 import { Pencil, Trash2 } from "lucide-react"
 import type { Reading } from "@/lib/types"
 
@@ -32,6 +35,8 @@ function formatDate(date: string) {
 
 export function HistoryTable({ readings }: { readings: Reading[] }) {
   const { deleteReading } = useReadings()
+  const { settings } = useSettings()
+  const { minValue, maxValue } = settings
   const [date, setDate] = useState("")
   const [type, setType] = useState("todos")
   const [range, setRange] = useState("todos")
@@ -43,12 +48,13 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
     return readings.filter((r) => {
       if (date && r.date !== date) return false
       if (type !== "todos" && r.type !== type) return false
-      if (range === "normal" && r.status !== "normal") return false
-      if (range === "alta" && r.status !== "alta") return false
-      if (range === "baja" && r.status !== "baja") return false
+      const status = computeStatus(r.value, minValue, maxValue)
+      if (range === "normal" && status !== "normal") return false
+      if (range === "alta" && status !== "alta") return false
+      if (range === "baja" && status !== "baja") return false
       return true
     })
-  }, [readings, date, type, range])
+  }, [readings, date, type, range, minValue, maxValue])
 
   async function handleDelete(reading: Reading) {
     const label = `${formatDate(reading.date)} ${reading.time} (${reading.value} mg/dL)`
@@ -102,16 +108,35 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="normal">Normal (70-140)</SelectItem>
-                <SelectItem value="alta">{"Alta (>140)"}</SelectItem>
-                <SelectItem value="baja">{"Baja (<70)"}</SelectItem>
+                <SelectItem value="normal">{`Normal (${minValue}-${maxValue})`}</SelectItem>
+                <SelectItem value="alta">{`Alta (>${maxValue})`}</SelectItem>
+                <SelectItem value="baja">{`Baja (<${minValue})`}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <div className="flex flex-col gap-2 md:hidden">
+        {filtered.length === 0 ? (
+          <p className="rounded-xl border border-border bg-card py-10 text-center text-sm text-muted-foreground">
+            {readings.length === 0
+              ? "Todavía no hay mediciones registradas. Comenzá a guardar tus mediciones para verlas acá."
+              : "No se encontraron mediciones con esos filtros."}
+          </p>
+        ) : (
+          filtered.map((r) => (
+            <ReadingCard
+              key={r.id}
+              reading={r}
+              onEdit={() => openEdit(r)}
+              onDelete={() => handleDelete(r)}
+            />
+          ))
+        )}
+      </div>
+
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>

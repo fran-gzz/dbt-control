@@ -32,9 +32,9 @@ export function estimateHbA1c(avgGlucose: number): number {
   return Math.round(((avgGlucose + 46.7) / 28.7) * 10) / 10
 }
 
-export function computeStatus(value: number): MeasurementStatus {
-  if (value > 140) return "alta"
-  if (value < 70) return "baja"
+export function computeStatus(value: number, minValue = 70, maxValue = 140): MeasurementStatus {
+  if (value > maxValue) return "alta"
+  if (value < minValue) return "baja"
   return "normal"
 }
 
@@ -119,9 +119,9 @@ export function weeklyTrendFrom(readings: Reading[]) {
 }
 
 // Distribution of measurements by status
-export function distributionFrom(readings: Reading[]) {
+export function distributionFrom(readings: Reading[], minValue = 70, maxValue = 140) {
   const counts: Record<MeasurementStatus, number> = { normal: 0, alta: 0, baja: 0 }
-  for (const r of readings) counts[r.status]++
+  for (const r of readings) counts[computeStatus(r.value, minValue, maxValue)]++
   return [
     { name: "Normal", value: counts.normal, key: "normal" as const },
     { name: "Alta", value: counts.alta, key: "alta" as const },
@@ -129,8 +129,8 @@ export function distributionFrom(readings: Reading[]) {
   ]
 }
 
-export function inRangePercentFrom(readings: Reading[]): number {
+export function inRangePercentFrom(readings: Reading[], minValue = 70, maxValue = 140): number {
   if (readings.length === 0) return 0
-  const normal = readings.filter((r) => r.status === "normal").length
+  const normal = readings.filter((r) => computeStatus(r.value, minValue, maxValue) === "normal").length
   return Math.round((normal / readings.length) * 100)
 }

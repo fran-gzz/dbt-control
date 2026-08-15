@@ -1,5 +1,15 @@
-import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from "firebase/firestore"
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore"
 import { db } from "./firebase"
+import type { AppSettings } from "./settings"
 import type { MeasurementStatus } from "./types"
 
 export interface NewReading {
@@ -60,4 +70,21 @@ export async function updateMeal(userId: string, mealId: string, meal: NewMeal) 
 
 export async function deleteMeal(userId: string, mealId: string) {
   await deleteDoc(doc(mealsCollection(userId), mealId))
+}
+
+export function settingsRef(userId: string) {
+  return doc(db, "users", userId, "settings", "config")
+}
+
+export async function updateSettings(userId: string, settings: Partial<AppSettings>) {
+  await setDoc(settingsRef(userId), settings, { merge: true })
+}
+
+export async function deleteUserData(userId: string) {
+  for (const col of [readingsCollection(userId), mealsCollection(userId)]) {
+    const snap = await getDocs(col)
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)))
+  }
+  await deleteDoc(settingsRef(userId)).catch(() => {})
+  await deleteDoc(doc(db, "users", userId)).catch(() => {})
 }
