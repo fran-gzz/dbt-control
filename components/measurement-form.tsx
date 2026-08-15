@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,24 +14,80 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { meals } from "@/lib/data"
-import { CheckCircle2, Save } from "lucide-react"
+import { computeStatus } from "@/lib/data"
+import { useReadings } from "@/components/readings-provider"
+import { useMeals } from "@/components/meals-provider"
+import { CheckCircle2, Loader2, Save } from "lucide-react"
+import type { MeasurementType } from "@/lib/types"
+
+const mealTypes = ["Ayunas", "Desayuno", "Almuerzo", "Cena", "Antes de dormir"] as const
+const activities = ["Ninguna", "Caminata 30 min", "Gimnasio", "Bicicleta", "Yoga", "Trote"]
+const moods = ["Tranquilo", "Feliz", "Enérgico", "Cansado", "Estresado", "Ansioso"]
 
 export function MeasurementForm() {
   const searchParams = useSearchParams()
   const prefillMeal = searchParams.get("comida") ?? ""
+  const { addReading } = useReadings()
+  const { meals } = useMeals()
 
-  const today = "2026-06-07"
-  const now = "14:30"
+  const [fecha, setFecha] = useState("")
+  const [hora, setHora] = useState("")
+  const [value, setValue] = useState("")
+  const [tipo, setTipo] = useState<MeasurementType>("Ayunas")
+  const [meal, setMeal] = useState(prefillMeal || "Ninguna")
+  const [activity, setActivity] = useState("Ninguna")
+  const [mood, setMood] = useState("Tranquilo")
+  const [notes, setNotes] = useState("")
 
   const [submitted, setSubmitted] = useState(false)
-  const [value, setValue] = useState("")
-  const [meal, setMeal] = useState(prefillMeal)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const now = new Date()
+      setFecha(now.toISOString().slice(0, 10))
+      setHora(
+        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      )
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitted(true)
-    setTimeout(() => setSubmitted(false), 3500)
+
+    const numericValue = Number(value)
+    setSaving(true)
+    setError("")
+    try {
+      await addReading({
+        value: numericValue,
+        date: fecha,
+        time: hora,
+        type: tipo,
+        meal,
+        activity,
+        mood,
+        notes,
+        status: computeStatus(numericValue),
+      })
+      setSubmitted(true)
+      setValue("")
+      setNotes("")
+      setTimeout(() => setSubmitted(false), 3500)
+    } catch (err) {
+      const code = (err as { code?: string })?.code
+      if (code === "permission-denied") {
+        setError(
+          "Firestore está rechazando la escritura. Actualizá las reglas de seguridad en Firebase Console (Reglas del Cloud Firestore).",
+        )
+      } else {
+        setError("No se pudo guardar la medición. Revisá tu conexión e intentá de nuevo.")
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -45,18 +101,24 @@ export function MeasurementForm() {
           {submitted ? (
             <div className="flex items-center gap-3 rounded-xl border border-chart-3/30 bg-chart-3/10 p-4 text-sm">
               <CheckCircle2 className="size-5 text-chart-3" />
-              <span className="font-medium">Medición guardada correctamente (demo).</span>
+              <span className="font-medium">Medición guardada correctamente.</span>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm">
+              <span className="font-medium text-destructive">{error}</span>
             </div>
           ) : null}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="fecha">Fecha</Label>
-              <Input id="fecha" type="date" defaultValue={today} required />
+              <Input id="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="hora">Hora</Label>
-              <Input id="hora" type="time" defaultValue={now} required />
+              <Input id="hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} required />
             </div>
           </div>
 
@@ -71,20 +133,22 @@ export function MeasurementForm() {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 required
+                min={20}
+                max={600}
               />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="tipo">Tipo de medición</Label>
-              <Select defaultValue="Ayunas">
+              <Select value={tipo} onValueChange={(v) => setTipo((v as MeasurementType) ?? "Ayunas")}>
                 <SelectTrigger id="tipo">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Ayunas">Ayunas</SelectItem>
-                  <SelectItem value="Desayuno">Desayuno</SelectItem>
-                  <SelectItem value="Almuerzo">Almuerzo</SelectItem>
-                  <SelectItem value="Cena">Cena</SelectItem>
-                  <SelectItem value="Antes de dormir">Antes de dormir</SelectItem>
+                  {mealTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -93,11 +157,12 @@ export function MeasurementForm() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="comida">Comida relacionada</Label>
-              <Select value={meal} onValueChange={(v) => setMeal(v ?? "")}>
+              <Select value={meal} onValueChange={(v) => setMeal(v ?? "Ninguna")}>
                 <SelectTrigger id="comida">
                   <SelectValue placeholder="Seleccionar comida" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Ninguna">Ninguna</SelectItem>
                   {meals.map((m) => (
                     <SelectItem key={m.id} value={m.name}>
                       {m.name}
@@ -108,17 +173,16 @@ export function MeasurementForm() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="actividad">Actividad física</Label>
-              <Select defaultValue="Ninguna">
+              <Select value={activity} onValueChange={(v) => setActivity(v ?? "Ninguna")}>
                 <SelectTrigger id="actividad">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Ninguna">Ninguna</SelectItem>
-                  <SelectItem value="Caminata 30 min">Caminata 30 min</SelectItem>
-                  <SelectItem value="Gimnasio">Gimnasio</SelectItem>
-                  <SelectItem value="Bicicleta">Bicicleta</SelectItem>
-                  <SelectItem value="Yoga">Yoga</SelectItem>
-                  <SelectItem value="Trote">Trote</SelectItem>
+                  {activities.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -126,17 +190,16 @@ export function MeasurementForm() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="emocional">Estado emocional</Label>
-            <Select defaultValue="Tranquilo">
+            <Select value={mood} onValueChange={(v) => setMood(v ?? "Tranquilo")}>
               <SelectTrigger id="emocional">
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tranquilo">Tranquilo</SelectItem>
-                <SelectItem value="Feliz">Feliz</SelectItem>
-                <SelectItem value="Enérgico">Enérgico</SelectItem>
-                <SelectItem value="Cansado">Cansado</SelectItem>
-                <SelectItem value="Estresado">Estresado</SelectItem>
-                <SelectItem value="Ansioso">Ansioso</SelectItem>
+                {moods.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -147,13 +210,15 @@ export function MeasurementForm() {
               id="observaciones"
               placeholder="Notas adicionales sobre esta medición..."
               rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg">
-              <Save className="size-4" />
-              Guardar medición
+            <Button type="submit" size="lg" disabled={saving || !fecha || !hora}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {saving ? "Guardando..." : "Guardar medición"}
             </Button>
           </div>
         </CardContent>

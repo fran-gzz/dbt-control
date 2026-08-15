@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -20,6 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { StatusBadge } from "@/components/status-badge"
+import { ReadingForm } from "@/components/reading-form"
+import { useReadings } from "@/components/readings-provider"
+import { Pencil, Trash2 } from "lucide-react"
 import type { Reading } from "@/lib/types"
 
 function formatDate(date: string) {
@@ -27,9 +31,12 @@ function formatDate(date: string) {
 }
 
 export function HistoryTable({ readings }: { readings: Reading[] }) {
+  const { deleteReading } = useReadings()
   const [date, setDate] = useState("")
   const [type, setType] = useState("todos")
   const [range, setRange] = useState("todos")
+  const [editing, setEditing] = useState<Reading | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   
 
   const filtered = useMemo(() => {
@@ -42,6 +49,26 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
       return true
     })
   }, [readings, date, type, range])
+
+  async function handleDelete(reading: Reading) {
+    const label = `${formatDate(reading.date)} ${reading.time} (${reading.value} mg/dL)`
+    if (!window.confirm(`¿Eliminar la medición del ${label}? Esta acción no se puede deshacer.`)) return
+    try {
+      await deleteReading(reading.id)
+    } catch (err) {
+      const code = (err as { code?: string })?.code
+      alert(
+        code === "permission-denied"
+          ? "Firestore está rechazando la operación. Actualizá las reglas de seguridad en Firebase Console."
+          : "No se pudo eliminar la medición. Intentá de nuevo.",
+      )
+    }
+  }
+
+  function openEdit(reading: Reading) {
+    setEditing(reading)
+    setFormOpen(true)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,13 +124,16 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
                   <TableHead className="hidden md:table-cell">Comida</TableHead>
                   <TableHead className="hidden lg:table-cell">Estado emocional</TableHead>
                   <TableHead className="text-right">Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                      No se encontraron mediciones con esos filtros.
+                    <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                      {readings.length === 0
+                        ? "Todavía no hay mediciones registradas. Comenzá a guardar tus mediciones para verlas acá."
+                        : "No se encontraron mediciones con esos filtros."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -118,6 +148,27 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
                       <TableCell className="text-right">
                         <StatusBadge status={r.status} />
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Editar medición del ${formatDate(r.date)} ${r.time}`}
+                            onClick={() => openEdit(r)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Eliminar medición del ${formatDate(r.date)} ${r.time}`}
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleDelete(r)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -130,6 +181,10 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
       <p className="text-sm text-muted-foreground">
         Mostrando {filtered.length} de {readings.length} mediciones.
       </p>
+
+      {editing ? (
+        <ReadingForm reading={editing} open={formOpen} onOpenChange={setFormOpen} />
+      ) : null}
     </div>
   )
 }

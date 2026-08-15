@@ -5,7 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from "recharts";
 
 const chartConfig = {
-    value: { label: "Glucemia", color: "var(--chart-1" },
+    value: { label: "Glucemia", color: "var(--chart-1)" },
 }
 
 export function GlucoseLineChart({ data }: { data: { date: string; value: number }[] }) {

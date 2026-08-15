@@ -1,3 +1,5 @@
+"use client"
+
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -12,8 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useAuth } from "@/components/auth-provider"
 
 export default function ConfiguracionPage() {
+  const { user } = useAuth()
+
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader title="Configuración" description="Ajustá tu perfil y preferencias de la aplicación." />
@@ -28,13 +33,16 @@ export default function ConfiguracionPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="nombre">Nombre</Label>
-                  <Input id="nombre" defaultValue="Fran" />
+                  <Input id="nombre" defaultValue={user?.displayName ?? ""} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="fran@email.com" />
+                  <Input id="email" type="email" defaultValue={user?.email ?? ""} readOnly />
                 </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Conectado con tu cuenta de Google ({user?.email ?? "Sin sesión"}).
+              </p>
             </CardContent>
           </Card>
 

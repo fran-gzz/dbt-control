@@ -1,12 +1,4 @@
-import readingsData from "@/data/readings.json"
-import mealsData from "@/data/meals.json"
-import type { Reading, Meal, MeasurementStatus } from "./types"
-
-export const readings: Reading[] = (readingsData as Reading[])
-  .slice()
-  .sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1))
-
-export const meals: Meal[] = mealsData as Meal[]
+import type { Reading, MeasurementStatus } from "./types"
 
 export function statusColor(status: MeasurementStatus): string {
   switch (status) {
@@ -40,32 +32,47 @@ export function estimateHbA1c(avgGlucose: number): number {
   return Math.round(((avgGlucose + 46.7) / 28.7) * 10) / 10
 }
 
-const allValues = readings.map((r) => r.value)
-
-export const stats = {
-  current: readings[0]?.value ?? 0,
-  weeklyAverage: average(
-    readings
-      .filter((r) => {
-        const d = new Date(r.date)
-        const ref = new Date("2026-06-07")
-        const diff = (ref.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
-        return diff <= 7
-      })
-      .map((r) => r.value),
-  ),
-  monthCount: readings.length,
-  generalAverage: average(allValues),
-  max: Math.max(...allValues),
-  min: Math.min(...allValues),
+export function computeStatus(value: number): MeasurementStatus {
+  if (value > 140) return "alta"
+  if (value < 70) return "baja"
+  return "normal"
 }
 
-stats.weeklyAverage = stats.weeklyAverage || average(allValues)
+export function sortReadings(readings: Reading[]): Reading[] {
+  return [...readings].sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1))
+}
 
-export const hba1c = estimateHbA1c(stats.generalAverage)
+export function statsFrom(readings: Reading[]) {
+  const allValues = readings.map((r) => r.value)
+  const latest = sortReadings(readings)[0]
+  const ref = latest ? new Date(latest.date) : new Date(0)
+
+  return {
+    current: latest?.value ?? 0,
+    weeklyAverage:
+      average(
+        readings
+          .filter((r) => {
+            const d = new Date(r.date)
+            const diff = (ref.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
+            return diff >= 0 && diff <= 7
+          })
+          .map((r) => r.value),
+      ) || (allValues.length > 0 ? average(allValues) : 0),
+    monthCount: readings.length,
+    generalAverage: average(allValues),
+    max: allValues.length > 0 ? Math.max(...allValues) : 0,
+    min: allValues.length > 0 ? Math.min(...allValues) : 0,
+  }
+}
+
+export function hba1cFrom(readings: Reading[]): number {
+  const avg = statsFrom(readings).generalAverage
+  return avg > 0 ? estimateHbA1c(avg) : 0
+}
 
 // 30-day line trend (one point per day, averaged)
-export function dailyTrend() {
+export function dailyTrendFrom(readings: Reading[]) {
   const byDate = new Map<string, number[]>()
   for (const r of readings) {
     if (!byDate.has(r.date)) byDate.set(r.date, [])
@@ -81,7 +88,7 @@ export function dailyTrend() {
 }
 
 // Averages by moment of day
-export function timeOfDayAverages() {
+export function timeOfDayAveragesFrom(readings: Reading[]) {
   const moments = ["Ayunas", "Desayuno", "Almuerzo", "Cena"]
   return moments.map((moment) => ({
     moment,
@@ -90,12 +97,15 @@ export function timeOfDayAverages() {
 }
 
 // Weekly trend (last ~5 weeks)
-export function weeklyTrend() {
+export function weeklyTrendFrom(readings: Reading[]) {
   const byWeek = new Map<number, number[]>()
-  const ref = new Date("2026-06-07")
+  const latest = sortReadings(readings)[0]
+  const ref = latest ? new Date(latest.date) : new Date(0)
   for (const r of readings) {
     const d = new Date(r.date)
-    const week = Math.floor((ref.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 7))
+    const diff = (ref.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
+    if (diff < 0) continue
+    const week = Math.floor(diff / 7)
     if (!byWeek.has(week)) byWeek.set(week, [])
     byWeek.get(week)!.push(r.value)
   }
@@ -109,7 +119,7 @@ export function weeklyTrend() {
 }
 
 // Distribution of measurements by status
-export function distribution() {
+export function distributionFrom(readings: Reading[]) {
   const counts: Record<MeasurementStatus, number> = { normal: 0, alta: 0, baja: 0 }
   for (const r of readings) counts[r.status]++
   return [
@@ -119,7 +129,8 @@ export function distribution() {
   ]
 }
 
-export function inRangePercent() {
+export function inRangePercentFrom(readings: Reading[]): number {
+  if (readings.length === 0) return 0
   const normal = readings.filter((r) => r.status === "normal").length
   return Math.round((normal / readings.length) * 100)
 }
