@@ -29,6 +29,27 @@ function GoogleIcon() {
   )
 }
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  "auth/unauthorized-domain":
+    "Este dominio no está autorizado en Firebase. Agregalo en Authentication → Settings → Authorized domains.",
+  "auth/popup-blocked":
+    "El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio e intentá de nuevo.",
+  "auth/network-request-failed":
+    "No se pudo conectar con Google. Revisá tu conexión e intentá de nuevo.",
+  "auth/account-exists-with-different-credential":
+    "Este email ya está vinculado a otra cuenta. Iniciá sesión con la cuenta de Google correcta.",
+}
+
+function authErrorMessage(err: unknown): string {
+  const code = (err as { code?: string })?.code
+  if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return ""
+  if (code && AUTH_ERROR_MESSAGES[code]) return AUTH_ERROR_MESSAGES[code]
+  if (code) {
+    return `No se pudo iniciar sesión (${code}). Verificá la configuración de Google en Firebase e intentá de nuevo.`
+  }
+  return "No se pudo iniciar sesión. Verificá que Google esté habilitado en Firebase e intentá de nuevo."
+}
+
 export default function LoginPage() {
   const { login } = useAuth()
   const [error, setError] = useState("")
@@ -39,8 +60,8 @@ export default function LoginPage() {
     setLoading(true)
     try {
       await login()
-    } catch {
-      setError("No se pudo iniciar sesión. Verificá que Google esté habilitado en Firebase e intentá de nuevo.")
+    } catch (err) {
+      setError(authErrorMessage(err))
     } finally {
       setLoading(false)
     }
