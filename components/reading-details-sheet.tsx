@@ -9,10 +9,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { StatusBadge } from "@/components/status-badge"
+import { useSettings } from "@/components/settings-provider"
+import { computeStatus } from "@/lib/data"
+import { parseISODate } from "@/lib/utils"
 import type { Reading } from "@/lib/types"
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("es-ES", {
+  return parseISODate(date).toLocaleDateString("es-ES", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -36,6 +39,7 @@ interface ReadingDetailsSheetProps {
 }
 
 export function ReadingDetailsSheet({ reading, open, onOpenChange }: ReadingDetailsSheetProps) {
+  const { settings } = useSettings()
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent>
@@ -60,7 +64,7 @@ export function ReadingDetailsSheet({ reading, open, onOpenChange }: ReadingDeta
                   <span className="text-xs text-muted-foreground">mg/dL</span>
                 </div>
               </div>
-              <StatusBadge status={reading.status} />
+              <StatusBadge status={computeStatus(reading.value, settings.minValue, settings.maxValue)} />
             </div>
 
             <div className="divide-y divide-border rounded-xl border border-border px-4">

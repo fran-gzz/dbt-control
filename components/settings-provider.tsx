@@ -27,7 +27,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       settingsRef(uid),
       (snap) => {
         if (snap.exists()) {
-          setSettings({ ...DEFAULT_SETTINGS, ...snap.data() } as AppSettings)
+          const stored = snap.data() ?? {}
+          setSettings({
+            ...DEFAULT_SETTINGS,
+            ...stored,
+            notifications: {
+              ...DEFAULT_SETTINGS.notifications,
+              ...(stored.notifications ?? {}),
+            },
+          } as AppSettings)
         } else {
           setSettings(DEFAULT_SETTINGS)
         }

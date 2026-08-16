@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { onSnapshot } from "firebase/firestore"
+import { onSnapshot, orderBy, query } from "firebase/firestore"
 import {
   addReading as writeReading,
   deleteReading as removeReading,
@@ -34,7 +34,7 @@ export function ReadingsProvider({ children }: { children: ReactNode }) {
     if (!uid) return
 
     const unsub = onSnapshot(
-      readingsCollection(uid),
+      query(readingsCollection(uid), orderBy("date", "desc")),
       (snap) => {
         const items = snap.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() }) as Reading,

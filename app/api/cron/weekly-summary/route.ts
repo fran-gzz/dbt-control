@@ -10,6 +10,21 @@ export const maxDuration = 60
 
 const CRON_SECRET = process.env.CRON_SECRET
 
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++
+      await fn(items[index])
+    }
+  })
+  await Promise.all(workers)
+}
+
 function dateNDaysAgo(days: number): string {
   const d = new Date()
   d.setDate(d.getDate() - days)
@@ -78,12 +93,12 @@ export async function GET(request: NextRequest) {
 
     const users = await listAllUsers()
 
-    for (const user of users) {
+    await mapWithConcurrency(users, 10, async (user) => {
       try {
         const userEmail = user.email
         if (!userEmail) {
           result.skipped++
-          continue
+          return
         }
 
         const settingsSnap = await db.collection("users").doc(user.uid).collection("settings").doc("config").get()
@@ -99,7 +114,7 @@ export async function GET(request: NextRequest) {
 
         if (!settings.notifications.weeklySummary) {
           result.skipped++
-          continue
+          return
         }
 
         const readingsSnap = await db
@@ -115,7 +130,7 @@ export async function GET(request: NextRequest) {
 
         if (readings.length === 0) {
           result.skipped++
-          continue
+          return
         }
 
         const stats = statsFrom(readings)
@@ -144,7 +159,7 @@ export async function GET(request: NextRequest) {
         result.failed++
         errors.push(`${user.uid}: ${(err as Error).message}`)
       }
-    }
+    })
   } catch (err) {
     return NextResponse.json(
       { error: `El resumen semanal falló: ${(err as Error).message}` },

@@ -44,7 +44,7 @@ export default function EstadisticasPage() {
               <StatCard label="HbA1c estimada" value={hasReadings ? String(hba1c) : "—"} unit="%" icon={Activity} />
             </div>
 
-            <WeeklyTrendChart data={weeklyTrendFrom(readings)} />
+            <WeeklyTrendChart data={weeklyTrendFrom(readings, 8)} />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <DistributionChart

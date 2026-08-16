@@ -65,14 +65,14 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard label="Glucemia actual" value={String(stats.current)} unit="mg/dL" icon={Droplet} accent hint="Última medición" />
-              <StatCard label="Promedio semanal" value={String(stats.weeklyAverage)} unit="mg/dL" icon={TrendingUp} hint="Últimos 7 días" />
+              <StatCard label="Promedio semanal" value={stats.weeklyAverage > 0 ? String(stats.weeklyAverage) : "—"} unit="mg/dL" icon={TrendingUp} hint="Últimos 7 días" />
               <StatCard label="HbA1c estimada" value={hasReadings ? String(hba1c) : "—"} unit="%" icon={Activity} hint="Estimación ADAG" />
               <StatCard label="Mediciones" value={String(stats.monthCount)} icon={ClipboardList} hint="Registros totales" />
             </div>
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-5">
               <div className="lg:col-span-3">
                 <GlucoseLineChart
-                  data={dailyTrendFrom(readings)}
+                  data={dailyTrendFrom(readings, 30)}
                   minValue={settings.minValue}
                   maxValue={settings.maxValue}
                 />

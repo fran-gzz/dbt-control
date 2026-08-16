@@ -29,7 +29,7 @@ export function MeasurementForm() {
   const searchParams = useSearchParams()
   const prefillMeal = searchParams.get("comida") ?? ""
   const { addReading } = useReadings()
-  const { meals } = useMeals()
+  const { meals, loading: mealsLoading } = useMeals()
   const { settings } = useSettings()
 
   const [fecha, setFecha] = useState("")
@@ -37,6 +37,7 @@ export function MeasurementForm() {
   const [value, setValue] = useState("")
   const [tipo, setTipo] = useState<MeasurementType>("Ayunas")
   const [meal, setMeal] = useState(prefillMeal || "Ninguna")
+  const [mealReset, setMealReset] = useState(false)
   const [activity, setActivity] = useState("Ninguna")
   const [mood, setMood] = useState("Tranquilo")
   const [notes, setNotes] = useState("")
@@ -48,13 +49,23 @@ export function MeasurementForm() {
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
       const now = new Date()
-      setFecha(now.toISOString().slice(0, 10))
+      setFecha(
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+          now.getDate(),
+        ).padStart(2, "0")}`,
+      )
       setHora(
         `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
       )
     })
     return () => cancelAnimationFrame(raf)
   }, [])
+
+  const mealIsValid = meal === "Ninguna" || meals.some((m) => m.name === meal)
+  if (!mealsLoading && !mealIsValid && !mealReset) {
+    setMeal("Ninguna")
+    setMealReset(true)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

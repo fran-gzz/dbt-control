@@ -244,12 +244,21 @@ export async function buildReportPDF(input: ReportInput): Promise<Uint8Array> {
       page.drawText(String(tick), { x: MARGIN - 14, y: yFor(tick) - 4, size: 7, font, color: MUTED })
     }
 
-    // X labels
-    const xLabels = [trend[0], trend[Math.floor(trend.length / 2)], trend[trend.length - 1]]
-    for (const label of xLabels) {
-      const idx = trend.indexOf(label)
+    // X labels (first, middle, last; deduplicated so a single point is drawn once)
+    const midIdx = Math.floor((trend.length - 1) / 2)
+    const xLabelIndexes = [...new Set([0, midIdx, trend.length - 1])]
+    for (const idx of xLabelIndexes) {
+      const label = trend[idx]
       const width = font.widthOfTextAtSize(label.date, 7)
-      if (idx === 0) {
+      if (trend.length === 1) {
+        page.drawText(label.date, {
+          x: MARGIN + chartW / 2 - width / 2,
+          y: chartBottom - 12,
+          size: 7,
+          font,
+          color: MUTED,
+        })
+      } else if (idx === 0) {
         page.drawText(label.date, { x: xFor(idx), y: chartBottom - 12, size: 7, font, color: MUTED })
       } else if (idx === trend.length - 1) {
         drawRightAligned(page, label.date, xFor(idx), chartBottom - 12, 7, font, MUTED)

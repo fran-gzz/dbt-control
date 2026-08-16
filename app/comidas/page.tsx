@@ -16,14 +16,17 @@ export default function ComidasPage() {
   const { meals, loading, deleteMeal } = useMeals()
   const [formOpen, setFormOpen] = useState(false)
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
+  const [formKey, setFormKey] = useState(0)
 
   function openNew() {
     setEditingMeal(null)
+    setFormKey((k) => k + 1)
     setFormOpen(true)
   }
 
   function openEdit(meal: Meal) {
     setEditingMeal(meal)
+    setFormKey((k) => k + 1)
     setFormOpen(true)
   }
 
@@ -125,7 +128,7 @@ export default function ComidasPage() {
         ) : null}
       </div>
 
-      <MealForm meal={editingMeal} open={formOpen} onOpenChange={setFormOpen} />
+      <MealForm key={formKey} meal={editingMeal} open={formOpen} onOpenChange={setFormOpen} />
     </div>
   )
 }

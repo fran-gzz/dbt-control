@@ -5,10 +5,13 @@ import { Clock, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/status-badge"
 import { ReadingDetailsSheet } from "@/components/reading-details-sheet"
+import { useSettings } from "@/components/settings-provider"
+import { computeStatus } from "@/lib/data"
+import { parseISODate } from "@/lib/utils"
 import type { Reading } from "@/lib/types"
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
+  return parseISODate(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
 }
 
 interface ReadingCardProps {
@@ -19,6 +22,9 @@ interface ReadingCardProps {
 
 export function ReadingCard({ reading, onEdit, onDelete }: ReadingCardProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const { settings } = useSettings()
+
+  const status = computeStatus(reading.value, settings.minValue, settings.maxValue)
 
   function openDetails() {
     setDetailsOpen(true)
@@ -88,7 +94,7 @@ export function ReadingCard({ reading, onEdit, onDelete }: ReadingCardProps) {
         </div>
         <div className="flex items-center gap-1.5">
           {actions}
-          <StatusBadge status={reading.status} />
+          <StatusBadge status={status} />
         </div>
       </div>
       <ReadingDetailsSheet reading={reading} open={detailsOpen} onOpenChange={setDetailsOpen} />

@@ -26,11 +26,12 @@ import { ReadingCard } from "@/components/reading-card"
 import { useReadings } from "@/components/readings-provider"
 import { useSettings } from "@/components/settings-provider"
 import { computeStatus } from "@/lib/data"
+import { parseISODate } from "@/lib/utils"
 import { Pencil, Trash2 } from "lucide-react"
 import type { Reading } from "@/lib/types"
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })
+  return parseISODate(date).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
 
 export function HistoryTable({ readings }: { readings: Reading[] }) {
@@ -42,7 +43,7 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
   const [range, setRange] = useState("todos")
   const [editing, setEditing] = useState<Reading | null>(null)
   const [formOpen, setFormOpen] = useState(false)
-  
+  const [formKey, setFormKey] = useState(0)
 
   const filtered = useMemo(() => {
     return readings.filter((r) => {
@@ -73,6 +74,7 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
 
   function openEdit(reading: Reading) {
     setEditing(reading)
+    setFormKey((k) => k + 1)
     setFormOpen(true)
   }
 
@@ -171,7 +173,7 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
                       <TableCell className="hidden text-muted-foreground md:table-cell">{r.meal}</TableCell>
                       <TableCell className="hidden text-muted-foreground lg:table-cell">{r.mood}</TableCell>
                       <TableCell className="text-right">
-                        <StatusBadge status={r.status} />
+                        <StatusBadge status={computeStatus(r.value, minValue, maxValue)} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-0.5">
@@ -208,7 +210,7 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
       </p>
 
       {editing ? (
-        <ReadingForm reading={editing} open={formOpen} onOpenChange={setFormOpen} />
+        <ReadingForm key={`${editing.id}-${formKey}`} reading={editing} open={formOpen} onOpenChange={setFormOpen} />
       ) : null}
     </div>
   )

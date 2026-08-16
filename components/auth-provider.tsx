@@ -22,6 +22,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+// Firebase only considers a login "recent" for ~5 minutes. Re-authenticating
+// with the same window avoids surprises in user.delete() below.
+const RECENT_LOGIN_WINDOW_MS = 5 * 60 * 1000
+
+async function hasRecentLogin(user: User): Promise<boolean> {
+  try {
+    const token = await user.getIdTokenResult()
+    return Date.now() - new Date(token.authTime).getTime() < RECENT_LOGIN_WINDOW_MS
+  } catch {
+    return false
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -45,18 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function deleteAccount() {
     if (!user) throw new Error("No hay sesión iniciada")
-    await deleteUserData(user.uid)
-    try {
-      await user.delete()
-    } catch (err) {
-      const code = (err as { code?: string })?.code
-      if (code === "auth/requires-recent-login") {
-        await reauthenticateWithPopup(user, new GoogleAuthProvider())
-        await user.delete()
-      } else {
-        throw err
-      }
+    if (!(await hasRecentLogin(user))) {
+      // Re-authenticate BEFORE deleting any data: if the user cancels the
+      // popup, nothing is lost and the account stays intact.
+      await reauthenticateWithPopup(user, new GoogleAuthProvider())
     }
+    await deleteUserData(user.uid)
+    await user.delete()
   }
 
   return (

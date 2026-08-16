@@ -17,8 +17,9 @@ export function GlucoseLineChart({
   minValue?: number
   maxValue?: number
 }) {
-  const lowerDomain = Math.min(minValue - 20, 60)
-  const upperDomain = Math.max(maxValue + 20, 160)
+  const values = data.map((d) => d.value)
+  const lowerDomain = Math.max(0, Math.floor(Math.min(minValue, ...values) - 10))
+  const upperDomain = Math.ceil(Math.max(maxValue, ...values) + 10)
   return (
     <Card>
       <CardHeader>

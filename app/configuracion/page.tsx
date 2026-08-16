@@ -21,29 +21,31 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useAuth } from "@/components/auth-provider"
 import { useSettings } from "@/components/settings-provider"
+import type { AppSettings } from "@/lib/settings"
+
+function draftFromSettings(settings: AppSettings) {
+  return {
+    minValue: String(settings.minValue),
+    maxValue: String(settings.maxValue),
+    weeklySummary: settings.notifications.weeklySummary,
+  }
+}
 
 export default function ConfiguracionPage() {
   const { user, deleteAccount } = useAuth()
   const { settings, loading, updateSettings } = useSettings()
 
-  const [draft, setDraft] = useState({
-    minValue: String(settings.minValue),
-    maxValue: String(settings.maxValue),
-    weeklySummary: settings.notifications.weeklySummary,
-  })
+  const [draft, setDraft] = useState(draftFromSettings(settings))
   const [prevSettings, setPrevSettings] = useState(settings)
 
-  if (
+  const settingsChanged =
     !loading &&
     (prevSettings.minValue !== settings.minValue ||
       prevSettings.maxValue !== settings.maxValue ||
       prevSettings.notifications.weeklySummary !== settings.notifications.weeklySummary)
-  ) {
-    setDraft({
-      minValue: String(settings.minValue),
-      maxValue: String(settings.maxValue),
-      weeklySummary: settings.notifications.weeklySummary,
-    })
+
+  if (settingsChanged) {
+    setDraft(draftFromSettings(settings))
     setPrevSettings(settings)
   }
 
