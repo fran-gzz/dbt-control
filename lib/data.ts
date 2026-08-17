@@ -3,23 +3,35 @@ import { parseISODate } from "./utils"
 
 export function statusColor(status: MeasurementStatus): string {
   switch (status) {
-    case "alta":
-      return "text-chart-5"
+    case "hipoglucemia":
+      return "text-red-600"
     case "baja":
-      return "text-chart-2"
-    default:
-      return "text-chart-3"
+      return "text-amber-500"
+    case "en_objetivo":
+      return "text-emerald-600"
+    case "elevada":
+      return "text-yellow-500"
+    case "alta":
+      return "text-orange-500"
+    case "muy_elevada":
+      return "text-red-700"
   }
 }
 
 export function statusLabel(status: MeasurementStatus): string {
   switch (status) {
-    case "alta":
-      return "Alta"
+    case "hipoglucemia":
+      return "Hipoglucemia"
     case "baja":
       return "Baja"
-    default:
-      return "Normal"
+    case "en_objetivo":
+      return "En objetivo"
+    case "elevada":
+      return "Elevada"
+    case "alta":
+      return "Alta"
+    case "muy_elevada":
+      return "Muy elevada"
   }
 }
 
@@ -33,14 +45,28 @@ export function estimateHbA1c(avgGlucose: number): number {
   return Math.round(((avgGlucose + 46.7) / 28.7) * 10) / 10
 }
 
-export function computeStatus(value: number, minValue = 70, maxValue = 140): MeasurementStatus {
-  if (value > maxValue) return "alta"
-  if (value < minValue) return "baja"
-  return "normal"
+export function computeStatus(value: number, type: MeasurementType): MeasurementStatus {
+  if (type === "Ayunas" || type === "Antes de dormir") {
+    if (value < 70) return "hipoglucemia"
+    if (value < 80) return "baja"
+    if (value <= 130) return "en_objetivo"
+    if (value <= 180) return "elevada"
+    return "alta"
+  }
+  if (value < 70) return "hipoglucemia"
+  if (value < 180) return "en_objetivo"
+  if (value < 250) return "elevada"
+  return "muy_elevada"
 }
 
 export function sortReadings(readings: Reading[]): Reading[] {
-  return [...readings].sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1))
+  return [...readings].sort((a, b) => {
+    const key = a.date + a.time
+    const other = b.date + b.time
+    if (key < other) return 1
+    if (key > other) return -1
+    return 0
+  })
 }
 
 export function statsFrom(readings: Reading[]) {
@@ -131,18 +157,28 @@ export function weeklyTrendFrom(readings: Reading[], weeks?: number) {
 }
 
 // Distribution of measurements by status
-export function distributionFrom(readings: Reading[], minValue = 70, maxValue = 140) {
-  const counts: Record<MeasurementStatus, number> = { normal: 0, alta: 0, baja: 0 }
-  for (const r of readings) counts[computeStatus(r.value, minValue, maxValue)]++
+export function distributionFrom(readings: Reading[]) {
+  const counts: Record<MeasurementStatus, number> = {
+    hipoglucemia: 0,
+    baja: 0,
+    en_objetivo: 0,
+    elevada: 0,
+    alta: 0,
+    muy_elevada: 0,
+  }
+  for (const r of readings) counts[computeStatus(r.value, r.type)]++
   return [
-    { name: "Normal", value: counts.normal, key: "normal" as const },
-    { name: "Alta", value: counts.alta, key: "alta" as const },
+    { name: "Hipoglucemia", value: counts.hipoglucemia, key: "hipoglucemia" as const },
     { name: "Baja", value: counts.baja, key: "baja" as const },
+    { name: "En objetivo", value: counts.en_objetivo, key: "en_objetivo" as const },
+    { name: "Elevada", value: counts.elevada, key: "elevada" as const },
+    { name: "Alta", value: counts.alta, key: "alta" as const },
+    { name: "Muy elevada", value: counts.muy_elevada, key: "muy_elevada" as const },
   ]
 }
 
-export function inRangePercentFrom(readings: Reading[], minValue = 70, maxValue = 140): number {
+export function inRangePercentFrom(readings: Reading[]): number {
   if (readings.length === 0) return 0
-  const normal = readings.filter((r) => computeStatus(r.value, minValue, maxValue) === "normal").length
-  return Math.round((normal / readings.length) * 100)
+  const inRange = readings.filter((r) => computeStatus(r.value, r.type) === "en_objetivo").length
+  return Math.round((inRange / readings.length) * 100)
 }

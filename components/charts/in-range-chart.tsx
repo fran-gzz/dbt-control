@@ -10,12 +10,8 @@ const chartConfig = {
 
 export function InRangeChart({
   percent,
-  minValue = 70,
-  maxValue = 140,
 }: {
   percent: number
-  minValue?: number
-  maxValue?: number
 }) {
   const data = [{ name: "rango", value: percent, fill: "var(--chart-1)" }]
   return (
@@ -23,7 +19,7 @@ export function InRangeChart({
       <CardHeader>
         <CardTitle>Porcentaje dentro de rango</CardTitle>
         <CardDescription>
-          Lecturas entre {minValue} y {maxValue} mg/dL
+          Lecturas clasificadas como &ldquo;En objetivo&rdquo;
         </CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-center">

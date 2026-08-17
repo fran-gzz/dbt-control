@@ -5,7 +5,6 @@ import { Clock, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/status-badge"
 import { ReadingDetailsSheet } from "@/components/reading-details-sheet"
-import { useSettings } from "@/components/settings-provider"
 import { computeStatus } from "@/lib/data"
 import { parseISODate } from "@/lib/utils"
 import type { Reading } from "@/lib/types"
@@ -22,9 +21,7 @@ interface ReadingCardProps {
 
 export function ReadingCard({ reading, onEdit, onDelete }: ReadingCardProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const { settings } = useSettings()
-
-  const status = computeStatus(reading.value, settings.minValue, settings.maxValue)
+  const status = computeStatus(reading.value, reading.type)
 
   function openDetails() {
     setDetailsOpen(true)

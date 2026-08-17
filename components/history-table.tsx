@@ -24,7 +24,6 @@ import { StatusBadge } from "@/components/status-badge"
 import { ReadingForm } from "@/components/reading-form"
 import { ReadingCard } from "@/components/reading-card"
 import { useReadings } from "@/components/readings-provider"
-import { useSettings } from "@/components/settings-provider"
 import { computeStatus } from "@/lib/data"
 import { parseISODate } from "@/lib/utils"
 import { Pencil, Trash2 } from "lucide-react"
@@ -36,8 +35,6 @@ function formatDate(date: string) {
 
 export function HistoryTable({ readings }: { readings: Reading[] }) {
   const { deleteReading } = useReadings()
-  const { settings } = useSettings()
-  const { minValue, maxValue } = settings
   const [date, setDate] = useState("")
   const [type, setType] = useState("todos")
   const [range, setRange] = useState("todos")
@@ -49,13 +46,11 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
     return readings.filter((r) => {
       if (date && r.date !== date) return false
       if (type !== "todos" && r.type !== type) return false
-      const status = computeStatus(r.value, minValue, maxValue)
-      if (range === "normal" && status !== "normal") return false
-      if (range === "alta" && status !== "alta") return false
-      if (range === "baja" && status !== "baja") return false
+      const status = computeStatus(r.value, r.type)
+      if (range !== "todos" && status !== range) return false
       return true
     })
-  }, [readings, date, type, range, minValue, maxValue])
+  }, [readings, date, type, range])
 
   async function handleDelete(reading: Reading) {
     const label = `${formatDate(reading.date)} ${reading.time} (${reading.value} mg/dL)`
@@ -110,9 +105,12 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="normal">{`Normal (${minValue}-${maxValue})`}</SelectItem>
-                <SelectItem value="alta">{`Alta (>${maxValue})`}</SelectItem>
-                <SelectItem value="baja">{`Baja (<${minValue})`}</SelectItem>
+                <SelectItem value="hipoglucemia">Hipoglucemia (&lt;70)</SelectItem>
+                <SelectItem value="baja">Baja (70–79)</SelectItem>
+                <SelectItem value="en_objetivo">En objetivo</SelectItem>
+                <SelectItem value="elevada">Elevada</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="muy_elevada">Muy elevada</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -173,7 +171,7 @@ export function HistoryTable({ readings }: { readings: Reading[] }) {
                       <TableCell className="hidden text-muted-foreground md:table-cell">{r.meal}</TableCell>
                       <TableCell className="hidden text-muted-foreground lg:table-cell">{r.mood}</TableCell>
                       <TableCell className="text-right">
-                        <StatusBadge status={computeStatus(r.value, minValue, maxValue)} />
+                        <StatusBadge status={computeStatus(r.value, r.type)} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-0.5">

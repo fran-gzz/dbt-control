@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity, LayoutDashboard, PlusCircle, History, BarChart3, UtensilsCrossed, FileDown, Settings, LogOut } from "lucide-react"
+import { Activity, LayoutDashboard, PlusCircle, History, BarChart3, UtensilsCrossed, FileDown, ArrowUpDown, Settings, LogOut } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +35,7 @@ const navItems = [
   { title: "Historial", url: "/historial", icon: History },
   { title: "Estadísticas", url: "/estadisticas", icon: BarChart3 },
   { title: "Comidas", url: "/comidas", icon: UtensilsCrossed },
+  { title: "Importar / Exportar", url: "/importar", icon: ArrowUpDown },
   { title: "Reporte PDF", url: "/reporte", icon: FileDown },
   { title: "Configuración", url: "/configuracion", icon: Settings },
 ]

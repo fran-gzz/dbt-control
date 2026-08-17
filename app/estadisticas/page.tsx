@@ -8,7 +8,6 @@ import { WeeklyTrendChart } from "@/components/charts/weekly-trend-chart"
 import { DistributionChart } from "@/components/charts/distribution-chart"
 import { InRangeChart } from "@/components/charts/in-range-chart"
 import { useReadings } from "@/components/readings-provider"
-import { useSettings } from "@/components/settings-provider"
 import {
   distributionFrom,
   hba1cFrom,
@@ -19,7 +18,6 @@ import {
 
 export default function EstadisticasPage() {
   const { readings, loading } = useReadings()
-  const { settings } = useSettings()
   const stats = statsFrom(readings)
   const hba1c = hba1cFrom(readings)
   const hasReadings = readings.length > 0
@@ -48,12 +46,10 @@ export default function EstadisticasPage() {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <DistributionChart
-                data={distributionFrom(readings, settings.minValue, settings.maxValue)}
+                data={distributionFrom(readings)}
               />
               <InRangeChart
-                percent={inRangePercentFrom(readings, settings.minValue, settings.maxValue)}
-                minValue={settings.minValue}
-                maxValue={settings.maxValue}
+                percent={inRangePercentFrom(readings)}
               />
             </div>
           </>

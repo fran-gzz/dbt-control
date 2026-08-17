@@ -64,10 +64,39 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Glucemia actual" value={String(stats.current)} unit="mg/dL" icon={Droplet} accent hint="Última medición" />
-              <StatCard label="Promedio semanal" value={stats.weeklyAverage > 0 ? String(stats.weeklyAverage) : "—"} unit="mg/dL" icon={TrendingUp} hint="Últimos 7 días" />
-              <StatCard label="HbA1c estimada" value={hasReadings ? String(hba1c) : "—"} unit="%" icon={Activity} hint="Estimación ADAG" />
-              <StatCard label="Mediciones" value={String(stats.monthCount)} icon={ClipboardList} hint="Registros totales" />
+              <StatCard
+                label="Glucemia actual"
+                value={String(stats.current)}
+                unit="mg/dL"
+                icon={Droplet}
+                accent
+                hint={sorted.length > 0 ? `${sorted[0].time} · ${sorted[0].type}` : "Última medición"}
+                tooltip="Valor de la última medición registrada. Puede variar según el momento del día y la actividad reciente."
+              />
+              <StatCard
+                label="Promedio semanal"
+                value={stats.weeklyAverage > 0 ? String(stats.weeklyAverage) : "—"}
+                unit="mg/dL"
+                icon={TrendingUp}
+                hint="Últimos 7 días"
+                tooltip="Promedio de las mediciones de los últimos 7 días. Un indicador útil del control glucémico reciente."
+              />
+              <StatCard
+                label="HbA1c estimada"
+                value={hasReadings ? String(hba1c) : "—"}
+                unit="%"
+                icon={Activity}
+                hint="Estimación ADAG"
+                tooltip="Hemoglobina glucosilada estimada a partir del promedio de glucemia (fórmula ADAG). Refleja el promedio de los últimos 2-3 meses. No reemplaza un análisis de laboratorio ni la consulta con un profesional de la salud."
+              />
+              <StatCard
+                label="Mediciones"
+                value={String(stats.monthCount)}
+                icon={ClipboardList}
+                hint="Registros totales"
+                href="/historial"
+                tooltip="Cantidad total de mediciones registradas. Hacé click para ver el historial completo."
+              />
             </div>
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-5">
               <div className="lg:col-span-3">

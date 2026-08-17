@@ -44,8 +44,8 @@ export default function ReportePage() {
   )
   const stats = useMemo(() => statsFrom(periodReadings), [periodReadings])
   const percentInRange = useMemo(
-    () => inRangePercentFrom(periodReadings, settings.minValue, settings.maxValue),
-    [periodReadings, settings.minValue, settings.maxValue],
+    () => inRangePercentFrom(periodReadings),
+    [periodReadings],
   )
   const hba1c = useMemo(
     () => (periodReadings.length > 0 ? hba1cFrom(periodReadings) : 0),

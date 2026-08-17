@@ -17,7 +17,6 @@ import {
 import { computeStatus } from "@/lib/data"
 import { useReadings } from "@/components/readings-provider"
 import { useMeals } from "@/components/meals-provider"
-import { useSettings } from "@/components/settings-provider"
 import { CheckCircle2, Loader2, Save } from "lucide-react"
 import type { MeasurementType } from "@/lib/types"
 
@@ -30,14 +29,12 @@ export function MeasurementForm() {
   const prefillMeal = searchParams.get("comida") ?? ""
   const { addReading } = useReadings()
   const { meals, loading: mealsLoading } = useMeals()
-  const { settings } = useSettings()
 
   const [fecha, setFecha] = useState("")
   const [hora, setHora] = useState("")
   const [value, setValue] = useState("")
   const [tipo, setTipo] = useState<MeasurementType>("Ayunas")
   const [meal, setMeal] = useState(prefillMeal || "Ninguna")
-  const [mealReset, setMealReset] = useState(false)
   const [activity, setActivity] = useState("Ninguna")
   const [mood, setMood] = useState("Tranquilo")
   const [notes, setNotes] = useState("")
@@ -62,10 +59,7 @@ export function MeasurementForm() {
   }, [])
 
   const mealIsValid = meal === "Ninguna" || meals.some((m) => m.name === meal)
-  if (!mealsLoading && !mealIsValid && !mealReset) {
-    setMeal("Ninguna")
-    setMealReset(true)
-  }
+  const effectiveMeal = mealsLoading || mealIsValid ? meal : "Ninguna"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -79,11 +73,11 @@ export function MeasurementForm() {
         date: fecha,
         time: hora,
         type: tipo,
-        meal,
+        meal: effectiveMeal,
         activity,
         mood,
         notes,
-        status: computeStatus(numericValue, settings.minValue, settings.maxValue),
+        status: computeStatus(numericValue, tipo),
       })
       setSubmitted(true)
       setValue("")
@@ -170,7 +164,7 @@ export function MeasurementForm() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="comida">Comida relacionada</Label>
-              <Select value={meal} onValueChange={(v) => setMeal(v ?? "Ninguna")}>
+              <Select value={effectiveMeal} onValueChange={(v) => setMeal(v ?? "Ninguna")}>
                 <SelectTrigger id="comida">
                   <SelectValue placeholder="Seleccionar comida" />
                 </SelectTrigger>

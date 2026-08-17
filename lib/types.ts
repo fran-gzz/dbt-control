@@ -1,4 +1,10 @@
-export type MeasurementStatus = "normal" | "alta" | "baja"
+export type MeasurementStatus =
+  | "hipoglucemia"
+  | "baja"
+  | "en_objetivo"
+  | "elevada"
+  | "alta"
+  | "muy_elevada"
 
 export type MeasurementType = "Ayunas" | "Desayuno" | "Almuerzo" | "Cena" | "Antes de dormir"
 

@@ -5,8 +5,10 @@ import { onSnapshot, orderBy, query } from "firebase/firestore"
 import {
   addReading as writeReading,
   deleteReading as removeReading,
+  migrateReadingIds,
   readingsCollection,
   updateReading as patchReading,
+  upsertReading as writeUpsertReading,
 } from "@/lib/firestore"
 import { useAuth } from "@/components/auth-provider"
 import type { Reading } from "@/lib/types"
@@ -17,6 +19,8 @@ interface ReadingsContextValue {
   loading: boolean
   error: string
   addReading: (reading: NewReading) => Promise<string>
+  upsertReading: (reading: NewReading) => Promise<string>
+  migrateReadingIds: () => Promise<number>
   updateReading: (readingId: string, reading: NewReading) => Promise<void>
   deleteReading: (readingId: string) => Promise<void>
 }
@@ -58,6 +62,16 @@ export function ReadingsProvider({ children }: { children: ReactNode }) {
     return writeReading(user.uid, reading)
   }
 
+  async function upsertReading(reading: NewReading) {
+    if (!user) throw new Error("No hay sesión iniciada")
+    return writeUpsertReading(user.uid, reading)
+  }
+
+  async function migrateIds() {
+    if (!user) throw new Error("No hay sesión iniciada")
+    return migrateReadingIds(user.uid)
+  }
+
   async function updateReading(readingId: string, reading: NewReading) {
     if (!user) throw new Error("No hay sesión iniciada")
     await patchReading(user.uid, readingId, reading)
@@ -69,7 +83,7 @@ export function ReadingsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ReadingsContext.Provider value={{ readings, loading, error, addReading, updateReading, deleteReading }}>
+    <ReadingsContext.Provider value={{ readings, loading, error, addReading, upsertReading, migrateReadingIds: migrateIds, updateReading, deleteReading }}>
       {children}
     </ReadingsContext.Provider>
   )

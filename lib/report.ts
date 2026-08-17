@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib"
-import type { Reading } from "@/lib/types"
+import type { Reading, MeasurementStatus } from "@/lib/types"
 import {
   computeStatus,
   dailyTrendFrom,
@@ -22,9 +22,12 @@ const MUTED = rgb(0.42, 0.45, 0.51)
 const BORDER = rgb(0.86, 0.88, 0.91)
 const LIGHT = rgb(0.96, 0.97, 0.98)
 const ACCENT = rgb(0.07, 0.52, 0.27)
-const NORMAL = rgb(0.13, 0.6, 0.33)
-const ALTA = rgb(0.82, 0.2, 0.24)
-const BAJA = rgb(0.15, 0.39, 0.82)
+const COLOR_HIPOGLUCEMIA = rgb(0.86, 0.15, 0.15)
+const COLOR_BAJA = rgb(0.96, 0.62, 0.04)
+const COLOR_EN_OBJETIVO = rgb(0.02, 0.59, 0.27)
+const COLOR_ELEVADA = rgb(0.92, 0.7, 0.03)
+const COLOR_ALTA = rgb(0.98, 0.45, 0.09)
+const COLOR_MUY_ELEVADA = rgb(0.73, 0.11, 0.11)
 
 function parseISODate(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number)
@@ -63,14 +66,20 @@ export interface ReportInput {
   readings: Reading[]
 }
 
-function statusText(status: "normal" | "alta" | "baja"): { label: string; color: RGB } {
+function statusText(status: MeasurementStatus): { label: string; color: RGB } {
   switch (status) {
-    case "alta":
-      return { label: "Alta", color: ALTA }
+    case "hipoglucemia":
+      return { label: "Hipoglucemia", color: COLOR_HIPOGLUCEMIA }
     case "baja":
-      return { label: "Baja", color: BAJA }
-    default:
-      return { label: "Normal", color: NORMAL }
+      return { label: "Baja", color: COLOR_BAJA }
+    case "en_objetivo":
+      return { label: "En objetivo", color: COLOR_EN_OBJETIVO }
+    case "elevada":
+      return { label: "Elevada", color: COLOR_ELEVADA }
+    case "alta":
+      return { label: "Alta", color: COLOR_ALTA }
+    case "muy_elevada":
+      return { label: "Muy elevada", color: COLOR_MUY_ELEVADA }
   }
 }
 
@@ -137,9 +146,9 @@ export async function buildReportPDF(input: ReportInput): Promise<Uint8Array> {
   )
   const stats = statsFrom(periodReadings)
   const avg = stats.generalAverage
-  const percentInRange = inRangePercentFrom(periodReadings, minValue, maxValue)
+  const percentInRange = inRangePercentFrom(periodReadings)
   const hba1c = periodReadings.length > 0 ? hba1cFrom(periodReadings) : 0
-  const distribution = distributionFrom(periodReadings, minValue, maxValue)
+  const distribution = distributionFrom(periodReadings)
   const distTotal = distribution.reduce((acc, d) => acc + d.value, 0)
   const generatedIso = toLocalISODate(new Date())
 
@@ -217,8 +226,8 @@ export async function buildReportPDF(input: ReportInput): Promise<Uint8Array> {
 
     // Reference lines
     const refLines = [
-      { value: maxValue, color: ALTA },
-      { value: minValue, color: BAJA },
+      { value: maxValue, color: COLOR_ALTA },
+      { value: minValue, color: COLOR_BAJA },
     ]
     for (const ref of refLines) {
       const ry = yFor(ref.value)
@@ -306,7 +315,18 @@ export async function buildReportPDF(input: ReportInput): Promise<Uint8Array> {
     const barMaxW = 260
     for (const d of distribution) {
       const pct = Math.round((d.value / distTotal) * 100)
-      const color = d.key === "alta" ? ALTA : d.key === "baja" ? BAJA : NORMAL
+      const color =
+        d.key === "hipoglucemia"
+          ? COLOR_HIPOGLUCEMIA
+          : d.key === "baja"
+            ? COLOR_BAJA
+            : d.key === "en_objetivo"
+              ? COLOR_EN_OBJETIVO
+              : d.key === "elevada"
+                ? COLOR_ELEVADA
+                : d.key === "muy_elevada"
+                  ? COLOR_MUY_ELEVADA
+                  : COLOR_ALTA
       const barW = (d.value / distTotal) * barMaxW
       page.drawText(d.name, { x: MARGIN, y, size: 9, font, color: INK })
       page.drawRectangle({ x: MARGIN + 130, y: y - 4, width: Math.max(barW, 6), height: 10, color })
@@ -348,7 +368,7 @@ export async function buildReportPDF(input: ReportInput): Promise<Uint8Array> {
         y = PAGE_H - MARGIN - 20
         y = drawHeader(page, y)
       }
-      const status = statusText(computeStatus(r.value, minValue, maxValue))
+      const status = statusText(computeStatus(r.value, r.type))
       const cells = [
         { text: formatDate(r.date), w: cols[0].width },
         { text: r.time, w: cols[1].width },

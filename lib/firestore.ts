@@ -36,6 +36,56 @@ export async function addReading(userId: string, reading: NewReading) {
   return docRef.id
 }
 
+function readingId(reading: { date: string; time: string; type: string; value: number }): string {
+  return `${reading.date}_${reading.time}_${reading.type}_${reading.value}`
+}
+
+export async function upsertReading(userId: string, reading: NewReading): Promise<string> {
+  const id = readingId(reading)
+  await setDoc(
+    doc(readingsCollection(userId), id),
+    { ...reading, createdAt: serverTimestamp() },
+    { merge: true },
+  )
+  return id
+}
+
+export async function migrateReadingIds(userId: string): Promise<number> {
+  const snap = await getDocs(readingsCollection(userId))
+  const byDeterministicId = new Map<string, { docId: string; data: Record<string, unknown> }[]>()
+
+  for (const d of snap.docs) {
+    const data = d.data()
+    const id = readingId({
+      date: data.date as string,
+      time: data.time as string,
+      type: data.type as string,
+      value: data.value as number,
+    })
+    const list = byDeterministicId.get(id) ?? []
+    list.push({ docId: d.id, data: data as Record<string, unknown> })
+    byDeterministicId.set(id, list)
+  }
+
+  let migrated = 0
+  for (const [detId, entries] of byDeterministicId) {
+    const alreadyCorrect = entries.length === 1 && entries[0].docId === detId
+    if (alreadyCorrect) continue
+
+    const keep = entries.find((e) => e.docId === detId) ?? entries[0]
+    await setDoc(doc(readingsCollection(userId), detId), keep.data, { merge: true })
+
+    for (const e of entries) {
+      if (e.docId !== detId) {
+        await deleteDoc(doc(readingsCollection(userId), e.docId))
+        migrated++
+      }
+    }
+  }
+
+  return migrated
+}
+
 export async function updateReading(userId: string, readingId: string, reading: NewReading) {
   await updateDoc(doc(readingsCollection(userId), readingId), { ...reading })
 }

@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/sheet"
 import { useReadings } from "@/components/readings-provider"
 import { useMeals } from "@/components/meals-provider"
-import { useSettings } from "@/components/settings-provider"
 import { computeStatus } from "@/lib/data"
 import { Loader2, Save } from "lucide-react"
 import type { MeasurementType, Reading } from "@/lib/types"
@@ -40,7 +39,6 @@ interface ReadingFormProps {
 export function ReadingForm({ reading, open, onOpenChange }: ReadingFormProps) {
   const { updateReading } = useReadings()
   const { meals } = useMeals()
-  const { settings } = useSettings()
 
   const [fecha, setFecha] = useState(reading.date)
   const [hora, setHora] = useState(reading.time)
@@ -70,7 +68,7 @@ export function ReadingForm({ reading, open, onOpenChange }: ReadingFormProps) {
         activity,
         mood,
         notes,
-        status: computeStatus(numericValue, settings.minValue, settings.maxValue),
+        status: computeStatus(numericValue, tipo),
       })
       onOpenChange(false)
     } catch (err) {

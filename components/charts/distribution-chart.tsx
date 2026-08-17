@@ -5,16 +5,22 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Cell, Pie, PieChart } from "recharts"
 
 const colorMap: Record<string, string> = {
-  normal: "var(--chart-3)",
-  alta: "var(--chart-5)",
-  baja: "var(--chart-2)",
+  hipoglucemia: "#dc2626",
+  baja: "#f59e0b",
+  en_objetivo: "#059669",
+  elevada: "#eab308",
+  alta: "#f97316",
+  muy_elevada: "#b91c1c",
 }
 
 const chartConfig = {
   value: { label: "Mediciones" },
-  Normal: { label: "Normal", color: "var(--chart-3)" },
-  Alta: { label: "Alta", color: "var(--chart-5)" },
-  Baja: { label: "Baja", color: "var(--chart-2)" },
+  Hipoglucemia: { label: "Hipoglucemia", color: "#dc2626" },
+  Baja: { label: "Baja", color: "#f59e0b" },
+  "En objetivo": { label: "En objetivo", color: "#059669" },
+  Elevada: { label: "Elevada", color: "#eab308" },
+  Alta: { label: "Alta", color: "#f97316" },
+  "Muy elevada": { label: "Muy elevada", color: "#b91c1c" },
 }
 
 export function DistributionChart({

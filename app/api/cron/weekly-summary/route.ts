@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
 
         const stats = statsFrom(readings)
         const avg = stats.generalAverage
-        const percent = inRangePercentFrom(readings, settings.minValue, settings.maxValue)
+        const percent = inRangePercentFrom(readings)
         const hba1c = estimateHbA1c(avg)
         const originSafe = origin || "https://dbt-control.vercel.app"
 
